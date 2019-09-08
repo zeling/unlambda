@@ -28,16 +28,28 @@
 
 extern ul_symtab_t symtab;
 
+enum {
+    UL_S = -1,
+    UL_K = -2,
+    UL_I = -3,
+    UL_C = -4, /* call/cc */
+    UL_D = -5, /* delay (promise) */
+    UL_V = -6, /* void */
+};
+
+typedef int ul_atom_t;
+
 typedef enum {
     UL_PARSE_OK = 0,
     UL_PARSE_EOF,
     UL_PARSE_UNRECOGNIZED,
+    UL_PARSE_OOM,
 } ul_parse_err_t;
 
 typedef struct ul_ast {
     union {
         struct ul_ast *rator;
-        ul_sym_t *atom;
+        ul_atom_t atom;
     } u;
     size_t nrands;
     struct ul_ast *rands[];
@@ -49,10 +61,9 @@ typedef struct ul_parse_state {
 } ul_parse_state_t;
 
 int ul_ast_is_atom(ul_ast_t *ast);
-
 int ul_ast_is_app(ul_ast_t *ast);
 
-ul_ast_t *ul_ast_mk_atom(ul_sym_t *sym);
+void ul_ast_free(ul_ast_t *ast);
 
-ul_ast_t *ul_parse_atom(ul_parse_state_t *s);
-ul_ast_t *ul_parse_app(ul_parse_state_t *s);
+ul_ast_t *ul_parse_prog(ul_parse_state_t *s);
+void ul_ast_dump(ul_ast_t *ast, FILE *out);

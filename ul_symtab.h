@@ -31,12 +31,12 @@
 #define UL_SYMTAB_BUCKET_MASK (UL_SYMTAB_BUCKET_SIZE - 1u)
 
 typedef enum {
-    UL_S,
-    UL_K,
-    UL_I,
-    UL_C,   /* call/cc */
-    UL_D,   /* delay (promise) */
-    UL_Dot, /* output */
+    UL_SYM_S,
+    UL_SYM_K,
+    UL_SYM_I,
+    UL_SYM_C,   /* call/cc */
+    UL_SYM_D,   /* delay (promise) */
+    UL_SYM_Dot, /* output */
 } ul_sym_kind;
 
 typedef struct ul_sym {

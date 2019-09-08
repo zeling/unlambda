@@ -1,4 +1,4 @@
-/* Tests for symbol table.
+/* Test for parser of unlambda.
  *
  * MIT License
  *
@@ -22,26 +22,34 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-
 #include <assert.h>
+#include <fcntl.h>
 #include <stdio.h>
+#include <string.h>
+#include <unistd.h>
 
-#include "string.h"
-#include "ul_symtab.h"
+#include "ul_parse.h"
+
+static void run_test_case(const char *filename);
 
 int main()
 {
-    static char *test_data[] = {
-        "Test", "Hello", "Yay", "Test", "Yay",
-    };
-    ul_symtab_t symtab;
-    ul_symtab_init(&symtab);
-    for (int i = 0; i < sizeof(test_data) / sizeof(test_data[0]); i++) {
-        ul_sym_t *sym = ul_symtab_get(&symtab, UL_SYM_S, test_data[i],
-                                      strlen(test_data[i]));
-        assert(strcmp(test_data[i], sym->data) == 0);
-    }
-    assert(symtab.nelems == 3);
-    ul_symtab_destroy(&symtab);
+    run_test_case("t/fib.ul");
+    run_test_case("t/hello.ul");
     puts("ok.");
+}
+
+void run_test_case(const char *filename)
+{
+    char buf[1024];
+    int fd = open(filename, O_RDONLY);
+    assert(fd != -1);
+    read(fd, buf, 1024);
+    ul_parse_state_t state = {buf, UL_PARSE_OK};
+    ul_ast_t *ast = ul_parse_prog(&state);
+    assert(ast);
+    ul_ast_dump(ast, stdout);
+    puts("");
+    ul_ast_free(ast);
+    return;
 }
