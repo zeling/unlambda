@@ -25,6 +25,7 @@
 #pragma once
 #include "ul_symtab.h"
 #include <stddef.h>
+#include <stdio.h>
 
 extern ul_symtab_t symtab;
 
