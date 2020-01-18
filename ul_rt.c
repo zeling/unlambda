@@ -76,7 +76,8 @@ static void ul_S(ul_closure_t *cont, ul_env_t *env, size_t n_args, ul_closure_t 
 /* GC */
 static ul_closure_t *gc_cont, *gc_clos;
 static ucontext_t ul_ctx, gc_ctx;
-static char gc_stk[1024];
+#define GC_STK_SIZE (16 * 1024)
+static char gc_stk[GC_STK_SIZE];
 static void gc(ul_closure_t *cont, ul_closure_t *clos);
 static void gc_main();
 static char *stk_to, *stk_from;
@@ -218,7 +219,7 @@ static ul_closure_t end_cont = {
 
 static void SII_cont_fn(ul_env_t *env_t, ul_closure_t *clos) {
     ul_closure_t *args[3] = { &I, &I, clos };
-    apply_clos(&S, &end_cont, 3, args);
+    apply_clos(&S, NULL, 3, args);
 }
 
 static ul_closure_t SII_cont = {
@@ -243,7 +244,7 @@ int main() {
     cont->env.captured[3] = &I,
     getcontext(&gc_ctx);
     gc_ctx.uc_stack.ss_sp = &gc_stk;
-    gc_ctx.uc_stack.ss_size = 1024;
+    gc_ctx.uc_stack.ss_size = GC_STK_SIZE;
     gc_ctx.uc_link = NULL;
     makecontext(&gc_ctx, (void (*)())&gc_main, 0);
     getcontext(&ul_ctx);
@@ -258,6 +259,9 @@ int main() {
 static char *allocp;
 static inline ul_force_inline ul_closure_t *copy(ul_closure_t *c) {
 #define GC_FWDPTR_TAG (-1UL)
+    if (!c) return NULL;
+    if ((uintptr_t) c < (uintptr_t) stk_from) return c;
+    if ((uintptr_t) c > (uintptr_t) stk_from + STK_SIZE) return c;
     allocp -= sizeof(ul_closure_t) + N_CLOSURE(c->env.n_captured);
     // memcpy(allocp, c, sizeof(ul_closure_t) + N_CLOSURE(c->env.n_captured));
     ((ul_closure_t *) allocp)->clos_fn = c->clos_fn;
@@ -282,19 +286,19 @@ void gc_main() {
     need_scan = 1;
     scan_limit = allocp = stk_to + STK_SIZE;
     gc_cont = copy(gc_cont);
-    if(gc_clos) gc_clos = copy(gc_clos);
+    gc_clos = copy(gc_clos);
     while (need_scan) {
         need_scan = 0;
         old_allocp = scanp = allocp;
         while (scanp < scan_limit) {
             ul_closure_t *const scanned = (ul_closure_t *)scanp;
             for (size_t i = 0; i < scanned->env.n_captured; i++) {
-                if (scanned->env.captured[i]->env.n_captured == GC_FWDPTR_TAG) {
+                if (scanned->env.captured[i] && scanned->env.captured[i]->env.n_captured == GC_FWDPTR_TAG) {
                     scanned->env.captured[i] = scanned->env.captured[i]->fwd_ptr;
                 } else {
                     scanned->env.captured[i] = copy(scanned->env.captured[i]);
                     need_scan = 1;
-                }
+                } 
             }
             scanp += sizeof(ul_closure_t) + N_CLOSURE(scanned->env.n_captured);
         }

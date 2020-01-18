@@ -1,7 +1,7 @@
 SANITIZER=-fsanitize=address,undefined -DASAN
 
-CFLAGS=-Wall -std=gnu99 -g $(SANITIZER)
-LDFLAGS=$(SANITIZER)
+CFLAGS=-Wall -std=gnu99 -g 
+# LDFLAGS=$(SANITIZER)
 
 all: test_symtab test_list test_parse ul_rt
 
